@@ -85,7 +85,7 @@ app.get('/projects/:name', function(req, res) {
 });
 
 app.get('/test', function (req,res) {
-  console.log("\n\nBeginning\n", req.session, "\n\n", req.cookies);
+  console.log("\n\nBeginning\n", req.session);
   res.send(200);
 })
 
