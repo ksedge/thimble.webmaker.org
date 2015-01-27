@@ -1,28 +1,14 @@
 // A subclass of CodeMirror which adds a few methods that make it easier
 // to work with character indexes rather than {line, ch} objects.
-define(["codemirror"], function(CodeMirror) {
+//
+// NOTE: CodeMirror now lives inside of an iframe with our version of
+//       brackets (affectionatly called brambles), so the "CodeMirror"
+//       object seen here is actually the friendlycode half of our proxy
+//       between friendlycode and the bramble CodeMirror instance.
+define(["bramble-proxy"], function(CodeMirror) {
   "use strict";
 
   return function indexableCodeMirror(place, givenOptions) {
-    var codeMirror = new CodeMirror(place, givenOptions);
-
-    // add autocomplete
-    CodeMirror.commands.autocomplete = function(cm) {
-      // "javascript", "html" and "css" are supported
-      var mode = CodeMirror.hint[CodeMirror.hint.currentMode];
-      if(mode) {
-        CodeMirror.showHint(cm, mode);
-      }
-    };
-
-    // autocomplete default mode
-    CodeMirror.hint.currentMode = "html";
-
-    // Returns the character index of the cursor position.
-    codeMirror.getCursorIndex = function() {
-      return codeMirror.indexFromPos(codeMirror.getCursor());
-    };
-
-    return codeMirror;
+    return new CodeMirror(place, givenOptions);
   };
 });
