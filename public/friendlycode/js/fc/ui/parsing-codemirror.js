@@ -51,7 +51,7 @@ define([
     // lives in brackets now, so we've added
     // a proxy layer to allow this code to (mostly)
     // remain unchanged. See "bramble-proxy.js"
-    var codeMirror = CodeMirrorProxy(place, givenOptions);
+    var codeMirror = new CodeMirrorProxy(place, givenOptions);
 
     codeMirror.on("change", function(event) {
       if (reparseTimeout !== undefined) {

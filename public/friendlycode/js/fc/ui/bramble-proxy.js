@@ -2,7 +2,7 @@
 // window and bramble's codemirror instance. It was designed to map to existing
 // friendlycode use of codemirror, with the exception of duplicate functionality
 // between bramble and friendlycode that bramble already provides (or will)
-define(function() {
+define(function() { debugger
   "use strict";
 
   var eventCBs = {
@@ -35,15 +35,16 @@ define(function() {
     };
 
     // Tell the iframe to load bramble
-    iframe.src = givenOptions.appUrl + "/friendlycode/vendor/brackets/src";
+    // iframe.src = givenOptions.appUrl + "/friendlycode/vendor/brackets/src";
+    iframe.src = "test.html";
 
     // Attach the iframe to the dom
     place.append(iframe);
 
     // Create CodeMirror-like interface for friendlycode to use
-    function getValue() {
+    this.getValue = function() {
       return latestSource;
-    }
+    };
   }
 
   BrambleProxy.prototype.on = function on(event, callback) {
@@ -60,7 +61,7 @@ define(function() {
         error: data.error,
         sourceCode: data.sourceCode,
         document: data.document
-      })
+      });
     });
   };
 

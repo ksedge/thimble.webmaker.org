@@ -5,7 +5,7 @@
 //       brackets (affectionatly called brambles), so the "CodeMirror"
 //       object seen here is actually the friendlycode half of our proxy
 //       between friendlycode and the bramble CodeMirror instance.
-define(["bramble-proxy"], function(CodeMirror) {
+define(["./bramble-proxy"], function(CodeMirror) {
   "use strict";
 
   return function indexableCodeMirror(place, givenOptions) {
