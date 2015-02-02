@@ -3,7 +3,7 @@
 // for extension points to hook into.
 define([
   "backbone-events",
-  "./indexable-codemirror",
+  "./bramble-proxy",
   "./URLProxy"
 ], function(BackboneEvents, CodeMirrorProxy, URLProxy) {
   "use strict";

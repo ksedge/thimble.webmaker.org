@@ -6,7 +6,6 @@ define(function(require) {
       LivePreview = require("fc/ui/live-preview");
 
   require('slowparse-errors');
-  require("codemirror/html");
 
   // TODO: Add bracketsProxy in place of codemirror
 
@@ -18,7 +17,7 @@ define(function(require) {
         sourceCode = $('<div class="source-code"></div>').attr('id','webmaker-source-code-pane').appendTo(div),
         previewArea = $('<div class="preview-holder"></div>').attr('id','webmaker-preview-holder-pane').appendTo(div);
 
-    var codeMirror = self.codeMirror = ParsingCodeMirror(sourceCode[0], {
+    var codeMirror = self.codeMirror = ParsingCodeMirror(sourceCode, {
       parse: function(html) {
         return Slowparse.HTML(document, html, {
           disallowActiveAttributes: true

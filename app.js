@@ -187,6 +187,15 @@ app.post( "/auth/v2/reset-password", webmakerAuth.handlers.resetPassword );
 // resource proxying for http-on-https
 webmakerProxy(app, middleware.checkForAuth);
 
+/*******************
+*************
+*********************/
+app.get('/test.html', function(req, res){
+  res.set('X-Frame-Options', "SAMEORIGIN");
+  res.render('test.html');
+});
+
+
 // Main page
 app.get('/',
         middleware.setNewPageOperation,

@@ -77,7 +77,8 @@ define(function(require) {
 
     if (!pageManager.currentPage()) {
       setTimeout(function() {
-        editor.panes.codeMirror.setValue(defaultContent);
+        // XXXbramble: This is where we will want to try to insert
+        //             the make into brackets
         doneLoading();
       }, 0);
     } else

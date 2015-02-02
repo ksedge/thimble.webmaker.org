@@ -2,7 +2,7 @@
 // window and bramble's codemirror instance. It was designed to map to existing
 // friendlycode use of codemirror, with the exception of duplicate functionality
 // between bramble and friendlycode that bramble already provides (or will)
-define(function() { debugger
+define(function() {
   "use strict";
 
   var eventCBs = {
@@ -10,10 +10,11 @@ define(function() { debugger
     "reparse": []
   };
 
+  var latestSource = "AIN'T GOT SH**";
+
   function BrambleProxy(place, givenOptions) {
     var iframe = document.createElement("iframe"),
-        telegraph = iframe.contentWindow,        // communication channel to the editor iframe
-        latestSource = "";
+        telegraph = iframe.contentWindow;        // communication channel to the editor iframe
 
     // Event listening for proxied event messages from our editor iframe.
     window.addEventListener("message", function(evt) {
@@ -21,9 +22,9 @@ define(function() { debugger
       if (typeof message.type !== "string" || message.type.indexOf("bramble") === -1) {
         return;
       }
-      if (evt.type == "bramble:change") {
-        latestSource = evt.sourceCode;
-        eventCBs[change].forEach(function(cb){
+      if (message.type == "bramble:change") {
+        latestSource = message.sourceCode;
+        eventCBs["change"].forEach(function(cb){
           cb();
         });
       }
@@ -45,7 +46,12 @@ define(function() { debugger
     this.getValue = function() {
       return latestSource;
     };
+
+    this.getWrapperElement = function(){
+      return place;
+    }
   }
+
 
   BrambleProxy.prototype.on = function on(event, callback) {
     if (event === "change") {
@@ -54,6 +60,12 @@ define(function() { debugger
       eventCBs.reparse.push(callback);
     }
   };
+
+  // Stubs
+  function empty() {};
+  BrambleProxy.prototype.refresh = empty;
+  BrambleProxy.prototype.clearHistory = empty;
+  BrambleProxy.prototype.focus = empty;
 
   BrambleProxy.signal = function signal(proxyInstance, eventType, data) {
     eventCBs["reparse"].forEach(function (cb){
