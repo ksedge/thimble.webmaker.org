@@ -15,6 +15,7 @@ define(function(require) {
   return function FriendlycodeEditor(options) {
     var publishURL = options.publishURL,
         pageToLoad = options.pageToLoad,
+        appUrl = options.appUrl,
         defaultContent = options.defaultContent || DefaultContentTemplate(),
         remixURLTemplate = options.remixURLTemplate ||
           location.protocol + "//" + location.host +
@@ -23,7 +24,8 @@ define(function(require) {
           container: options.container,
           allowJS: options.allowJS,
           previewLoader: options.previewLoader,
-          dataProtector: DataProtector
+          dataProtector: DataProtector,
+          appUrl: appUrl
         }),
         makeDetails = options.makeDetails,
         ready = $.Deferred();
@@ -75,7 +77,8 @@ define(function(require) {
 
     if (!pageManager.currentPage()) {
       setTimeout(function() {
-        editor.panes.codeMirror.setValue(defaultContent);
+        // XXXbramble: This is where we will want to try to insert
+        //             the make into brackets
         doneLoading();
       }, 0);
     } else
