@@ -102,36 +102,49 @@ define(["jquery", "/external/make-api.js", "/external/requestAnimationFrameShim.
             return;
           } else if (data.action === "highlight") {
             var top = codeMirror.getScrollInfo().top,
-                clientHeight = codeMirror.getScrollInfo().clientHeight,
-                viewportTop = codeMirror.lineAtHeight(top + 10, "local"),
-                viewportBottom = codeMirror.lineAtHeight(top + clientHeight, "local"),
-                mark;
+                clientHeight = codeMirror.getScrollInfo().clientHeight;
 
-            if (lineTo < viewportTop) {
-              $(".tutorial-pointer").text(lineString).show();
-            } else if (lineFrom > viewportBottom) {
-              $(".tutorial-pointer").text(lineString).addClass("down").show();
-            }
+            codeMirror.lineAtHeight(top + 10, "local", function(viewportTop) {
+              codeMirror.lineAtHeight(top + clientHeight, "local", function(viewportBottom) {
+                if (lineTo < viewportTop) {
+                  $(".tutorial-pointer").text(lineString).show();
+                } else if (lineFrom > viewportBottom) {
+                  $(".tutorial-pointer").text(lineString).addClass("down").show();
+                }
 
-            for (i = lineFrom; i <= lineTo; i++) {
-              mark = document.createElement("span");
-              $(mark).attr("class","gutter-mark tutorial-class");
-              mark.innerHTML = "...";
-              codeMirror.setGutterMarker(i, "gutter-markers", mark);
-              codeMirror.addLineClass(i, "background", "tutorial-highlight");
-            }
+                var highlight = function(position) {
+                  var mark = {
+                    name: "span",
+                    attributes: {
+                      "class": "gutter-mark tutorial-class"
+                    },
+                    innerHTML: "..."
+                  };
+
+                  codeMirror.setGutterMarker(position, "gutter-markers", mark, function() {
+                    codeMirror.addLineClass(position, "background", "tutorial-highlight", function() {});
+                  });
+                };
+
+                for (i = lineFrom; i <= lineTo; i++) {
+                  highlight(i);
+                }
+              });
+            });
           } else if (data.action === "unhighlight") {
             $(".tutorial-pointer").hide().removeClass("down");
+
+            var removeHighlight = function(position) {
+              codeMirror.setGutterMarker(position, "gutter-markers", null, function() {
+                codeMirror.removeLineClass(position, "background", "tutorial-highlight", function() {});
+              });
+            };
+
             for (i = lineFrom; i <= lineTo; i++) {
-              codeMirror.setGutterMarker(i, "gutter-markers", null);
-              codeMirror.removeLineClass(i, "background", "tutorial-highlight");
+              removeHighlight(i);
             }
           } else if (data.action === "scroll") {
-            var codeMirrorLine = document.querySelector(".CodeMirror-code > div"),
-                lineHeight = parseFloat(getComputedStyle(codeMirrorLine).height),
-                margin = 5 * lineHeight, // how many lines are displayed above targetted line
-                position = codeMirror.getScrollInfo().top,
-                target = codeMirror.heightAtLine(lineFrom, "local") - margin,
+            var position = codeMirror.getScrollInfo().top,
                 distance,
                 stepSize,
                 steps = 0;
@@ -140,36 +153,44 @@ define(["jquery", "/external/make-api.js", "/external/requestAnimationFrameShim.
               $(this).removeClass("down");
             });
 
-            if (target < 0) {
-              target = 0;
-            }
+            codeMirror.getLineHeight(".CodeMirror-code > div", function(lineHeight) {
+              var margin = 5 * lineHeight; // how many lines are displayed above targetted line
 
-            distance = Math.abs(target - position);
-            if (distance < 0.1) {
-              return;
-            }
+              codeMirror.heightAtLine(lineFrom, "local", function(target) {
+                target -= margin;
 
-            stepSize = Math.floor(distance/50 + 1); // greater distance -> greater step size, linear from 1 to 20 px
-            if (stepSize > 20) {
-              stepSize = 20;
-            }
+                if (target < 0) {
+                  target = 0;
+                }
 
-            var scroll = (function(direction) {
-              return function() {
-                steps = steps + 1;
-                position = position + (direction * stepSize);
-                codeMirror.scrollTo(0, position);
-
-                if (steps * stepSize >= distance) {
-                  codeMirror.scrollTo(0, target);
+                distance = Math.abs(target - position);
+                if (distance < 0.1) {
                   return;
                 }
 
-                requestAnimationFrame(scroll);
-              };
-            }(target - position < 0 ? -1 : 1));
+                stepSize = Math.floor(distance/50 + 1); // greater distance -> greater step size, linear from 1 to 20 px
+                if (stepSize > 20) {
+                  stepSize = 20;
+                }
 
-            scroll();
+                var scroll = (function(direction) {
+                  return function() {
+                    steps = steps + 1;
+                    position = position + (direction * stepSize);
+                    codeMirror.scrollTo(0, position);
+
+                    if (steps * stepSize >= distance) {
+                      codeMirror.scrollTo(0, target);
+                      return;
+                    }
+
+                    requestAnimationFrame(scroll);
+                  };
+                }(target - position < 0 ? -1 : 1));
+
+                scroll();
+              });
+            });
           }
         }
 
@@ -206,6 +227,8 @@ define(["jquery", "/external/make-api.js", "/external/requestAnimationFrameShim.
           }).show();
 
           window.addEventListener('message', function(event){
+            var data;
+
             try {
               data = JSON.parse(event.data);
               if(data.type && data.type === "tutorial" && !data.action) {
