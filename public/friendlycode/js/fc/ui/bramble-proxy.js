@@ -15,7 +15,35 @@ define(["backbone-events"], function(BackboneEvents) {
   function BrambleProxy(place, options) {
     var iframe = document.createElement("iframe");
     var latestSource = "(none)";
+    var lastLine = 0;
+    var scrollInfo;
     var telegraph;
+
+    function communicateEditMessage(fn) {
+      var argLen = arguments.length;
+      var callback = typeof arguments[argLen - 1] === "function" ? arguments[argLen - 1] : undefined;
+      var params = Array.prototype.slice.call(arguments, 1, callback ? argLen - 1 : argLen);
+
+      if(callback) {
+        window.addEventListener("message", function editReceiver(e) {
+          var message = JSON.parse(e.data);
+
+          if(message.type !== "bramble:edit" || message.fn !== fn) {
+            return;
+          }
+
+          window.removeEventListener("message", editReceiver);
+
+          callback(message.value);
+        });
+      }
+
+      telegraph.postMessage(JSON.stringify({
+        type: "bramble:edit",
+        fn: fn,
+        params: params
+      }), "*");
+    }
 
     // Event listening for proxied event messages from our editor iframe.
     window.addEventListener("message", function(evt) {
@@ -29,6 +57,9 @@ define(["backbone-events"], function(BackboneEvents) {
       }
       if (message.type === "bramble:change") {
         latestSource = message.sourceCode;
+        lastLine = message.lastLine;
+        if(message.scrollInfo) scrollInfo = message.scrollInfo;
+
         eventCBs["change"].forEach(function(cb) {
           cb();
         });
@@ -47,11 +78,51 @@ define(["backbone-events"], function(BackboneEvents) {
         });
         return;
       }
+      if (message.type === "bramble:viewportChange") {
+        scrollInfo = message.scrollInfo;
+      }
     });
 
     // Create CodeMirror-like interface for friendlycode to use
     this.getValue = function() {
       return latestSource;
+    };
+
+    // Stub for CodeMirror's method to get the last line in the editor
+    this.lastLine = function() {
+      return lastLine;
+    };
+
+    this.getScrollInfo = function() {
+      return scrollInfo;
+    };
+
+    this.lineAtHeight = function(height, mode, callback) {
+      communicateEditMessage("lineAtHeight", height, mode, callback);
+    };
+
+    this.setGutterMarker = function(line, gutterID, element, callback) {
+      communicateEditMessage("setGutterMarker", line, gutterID, element, callback);
+    };
+
+    this.addLineClass = function(line, where, cssClass, callback) {
+      communicateEditMessage("addLineClass", line, where, cssClass, callback);
+    };
+
+    this.removeLineClass = function(line, where, cssClass, callback) {
+      communicateEditMessage("removeLineClass", line, where, cssClass, callback);
+    };
+
+    this.heightAtLine = function(line, mode, callback) {
+      communicateEditMessage("heightAtLine", line, mode, callback);
+    };
+
+    this.getLineHeight = function(selector, callback) {
+      communicateEditMessage("getLineHeight", selector, callback);
+    };
+
+    this.scrollTo = function(x, y) {
+      communicateEditMessage("scrollTo", x, y);
     };
 
     this.init = function(make) {
