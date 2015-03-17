@@ -10,7 +10,7 @@ define(function() {
     var codeMirror = options.codeMirror;
 
     function refreshButtons() {
-      var history = codeMirror.historySize();
+      var history = 0;
       undo.toggleClass("enabled", history.undo === 0 ? false : true);
       redo.toggleClass("enabled", history.redo === 0 ? false : true);
     }
@@ -18,13 +18,11 @@ define(function() {
     undo.click(function() {
       analytics.event("Undo");
       codeMirror.undo();
-      codeMirror.reparse();
       refreshButtons();
     });
     redo.click(function() {
       analytics.event("Redo");
       codeMirror.redo();
-      codeMirror.reparse();
       refreshButtons();
     });
     codeMirror.on("change", refreshButtons);

@@ -21,9 +21,6 @@ define(["jquery", "fc/prefs", "analytics"], function($, Preferences, analytics) 
       $(codeMirror.getWrapperElement()).attr("data-size", size);
       codeMirror.refresh();
 
-      // Reparse as well, in case there were any errors.
-      codeMirror.reparse();
-
       // Mark text size in drop-down.
       menuItems.removeClass("selected");
       menuItem(size).addClass("selected");
@@ -51,6 +48,7 @@ define(["jquery", "fc/prefs", "analytics"], function($, Preferences, analytics) 
         label: textSize
       });
       Preferences.set("textSize", textSize);
+      codeMirror.executeCommand("_fontSize", { data : textSize } );
       Preferences.save();
       menu.hide();
     });
