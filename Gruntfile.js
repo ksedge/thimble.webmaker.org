@@ -154,9 +154,13 @@ module.exports = function( grunt ) {
   // Thimble-task: update
   //   Updates the brackets submodule, committing and
   //   pushing the result.
-  grunt.registerTask( "update", function() {
+  grunt.registerTask( "update", function(branch, remote) {
     var date = new Date(Date.now()).toString();
     grunt.config("gitcommit.module.options.message", "Submodule update on " + date);
+
+    if (remote) {
+      grunt.config("gitpush.smart.remote", remote);
+    }
 
     grunt.task.run([
         // Confirm we're ready to start
@@ -166,7 +170,7 @@ module.exports = function( grunt ) {
         'update_submodules:publish',
         'gitadd:modules',
         'gitcommit:module',
-        'smartPush:' + GIT_BRANCH + ":false"
+        'smartPush:' + branch || GIT_BRANCH + ":false"
     ]);
   });
 
