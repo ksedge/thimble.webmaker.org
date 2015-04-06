@@ -98,7 +98,6 @@ define(["backbone-events", "fc/prefs"], function(BackboneEvents, Preferences) {
         eventCBs["loaded"].forEach(function(cb) {
           cb();
         });
-        that.executeCommand("_fontSize", { data : prefSize });
         that.executeCommand("_spaceUnits", { data : 2 });
         return;
       }
