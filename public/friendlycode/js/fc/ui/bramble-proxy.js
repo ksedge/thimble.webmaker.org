@@ -193,9 +193,9 @@ define(["backbone-events", "fc/prefs", "fc/bramble-ui-bridge"],
       commandCategory = "editorCommand";
       command = "setSpaceUnits";
       params = options.data;
-    } else if (button === "_reload") { 
+    } else if (button === "_reload") {
       commandCategory = "reloadCommand";
-    } else if (button === "_runJavascript") { 
+    } else if (button === "_runJavascript") {
       commandCategory = "runJavascript";
       command = document.getElementById('preview-run-js').checked;
     }

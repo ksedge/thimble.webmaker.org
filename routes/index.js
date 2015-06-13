@@ -33,7 +33,8 @@ module.exports = function(utils, nunjucksEnv, appName) {
       together = env.get("USE_TOGETHERJS") ? env.get("TOGETHERJS") : false,
       userbarEndpoint = env.get("USERBAR"),
       webmaker = env.get("WEBMAKER_URL"),
-      oauth = env.get("OAUTH");
+      oauth = env.get("OAUTH"),
+      publishURL = env.get("PUBLISH_HOSTNAME");
 
   // We make sure to grab just the protocol and hostname for
   // postmessage security.
@@ -48,65 +49,127 @@ module.exports = function(utils, nunjucksEnv, appName) {
     editorURL = env.get("BRAMBLE_URI") + '/dist';
   }
 
+  function renderUsersProjects(req, res) {
+    var user = req.session.user;
+    var username = encodeURIComponent(user.username);
+    request.get({
+      url: publishURL + '/users?name=' + username
+      // headers: {
+      //   "Authorization": "token " + user.token
+      // }
+    }, function(err, response, body) {
+      if(err) {
+        console.error('Error sending request', err);
+        // deal with error
+        return;
+      }
+
+      if(response.statusCode !== 200) {
+        console.error('Error retrieving user: ', response);
+        // deal with failure
+        return;
+      }
+
+      var publishUser = req.session.publishUser = JSON.parse(body);
+
+      request.get({
+        url: publishURL + '/users/' + publishUser.id + '/projects',
+        headers: {
+          "Authorization": "token " + req.session.token
+        }
+      }, function(err, response, body) {
+        if(err) {
+          console.error('Error sending request', err);
+          // deal with error
+          return;
+        }
+
+        if(response.statusCode !== 200) {
+          console.error('Error retrieving user\'s projects: ', response);
+          // deal with failure
+          return;
+        }
+
+        var options = {
+          csrf: req.csrfToken ? req.csrfToken() : null,
+          HTTP_STATIC_URL: '/',
+          projects: JSON.parse(body)
+        };
+
+        res.render('projects.html', options);
+      });
+    });
+  }
+
+  function showThimble(req, res) {
+    var options = {
+      appname: appName,
+      appURL: appURL,
+      personaHost: personaHost,
+      allowJS: allowJS,
+      csrf: req.csrfToken(),
+      LOGIN_URL: env.get("LOGIN_URL"),
+      email: req.session.user ? req.session.user.email : '',
+      HTTP_STATIC_URL: '/',
+      MAKE_ENDPOINT: makeEndpoint,
+      pageOperation: req.body.pageOperation,
+      previewLoader: previewLoader,
+      origin: req.params.id,
+      makeUrl: req.makeUrl,
+      together: together,
+      userbar: userbarEndpoint,
+      webmaker: webmaker,
+      editorHOST: editorHOST,
+      OAUTH_CLIENT_ID: oauth.client_id,
+      OAUTH_AUTHORIZATION_URL: oauth.authorization_url
+    };
+
+    // We add the localization code to the query params through a URL object
+    // and set search prop to nothing forcing query to be used during url.format()
+    var urlObj = url.parse(req.url, true);
+    urlObj.search = "";
+    urlObj.query["locale"] = req.localeInfo.lang;
+    var thimbleUrl = url.format(urlObj);
+
+    // We forward query string params down to the editor iframe so that
+    // it's easy to do things like enableExtensions/disableExtensions
+    options.editorURL = editorURL + '/index.html' + (url.parse(thimbleUrl).search || '');
+
+    if (req.user) {
+      options.username = req.user.username;
+      options.avatar = req.user.avatar;
+    }
+
+    res.render('index.html', options);
+  }
+
+  function index(req, res) {
+    console.log("Here");
+    // Hack until login button is set up
+    if(req.query.loggedIn === "yes") {
+      req.session.user = { username: "ag_dubs" };
+      req.session.token = "fake_token";
+    }
+    if(req.session.user && req.body.pageOperation !== 'project-selected') {
+      renderUsersProjects(req, res);
+      return;
+    }
+
+    showThimble(req, res);
+  }
+
   return {
-    index: function(req, res) {
-      if (req.requestId) {
-        res.locals.pageToLoad = appURL + "/" + req.localeInfo.lang + "/project/" + req.requestId + "/data";
-      } else if (req.oldid) {
-        res.locals.pageToLoad = appURL + "/p/" + req.oldid;
+    index: index,
+    showThimble: showThimble,
+
+    openProject: function(req, res) {
+      if(!req.session.user) {
+        index(req, res);
+        return;
       }
+      // Get project data from publish.wm.org
 
-      var makedetails = '{}';
-      if(req.make) {
-        makedetails = encodeURIComponent(JSON.stringify({
-          title: req.make.title,
-          tags: req.make.tags,
-          locales: req.make.locale,
-          description: req.make.description,
-          published: req.make.published
-        }));
-      }
-
-      var options = {
-        appname: appName,
-        appURL: appURL,
-        personaHost: personaHost,
-        allowJS: allowJS,
-        csrf: req.csrfToken(),
-        LOGIN_URL: env.get("LOGIN_URL"),
-        email: req.session.user ? req.session.user.email : '',
-        HTTP_STATIC_URL: '/',
-        MAKE_ENDPOINT: makeEndpoint,
-        pageOperation: req.body.pageOperation,
-        previewLoader: previewLoader,
-        origin: req.params.id,
-        makeUrl: req.makeUrl,
-        together: together,
-        userbar: userbarEndpoint,
-        webmaker: webmaker,
-        makedetails: makedetails,
-        editorHOST: editorHOST,
-        OAUTH_CLIENT_ID: oauth.client_id,
-        OAUTH_AUTHORIZATION_URL: oauth.authorization_url
-      };
-
-      // We add the localization code to the query params through a URL object
-      // and set search prop to nothing forcing query to be used during url.format()
-      var urlObj = url.parse(req.url, true);
-      urlObj.search = "";
-      urlObj.query["locale"] = req.localeInfo.lang;
-      var thimbleUrl = url.format(urlObj);
-
-      // We forward query string params down to the editor iframe so that
-      // it's easy to do things like enableExtensions/disableExtensions
-      options.editorURL = editorURL + '/index.html' + (url.parse(thimbleUrl).search || '');
-
-      if (req.user) {
-        options.username = req.user.username;
-        options.avatar = req.user.avatar;
-      }
-
-      res.render('index.html', options);
+      index(req, res);
     },
 
     rawData: function(req, res) {
