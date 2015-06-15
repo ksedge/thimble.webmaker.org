@@ -3,7 +3,7 @@
 
   Array.prototype.forEach.call(projects, function(project) {
     project.addEventListener("click", function() {
-      window.location.pathname += "loadProject/" + project.getAttribute("data-project-id");
+      window.location.pathname += "project/" + project.getAttribute("data-project-id");
     });
   });
 })();

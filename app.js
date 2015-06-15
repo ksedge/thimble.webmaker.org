@@ -214,9 +214,11 @@ app.get('/',
         middleware.setUserIfTokenExists,
         routes.index );
 
-app.get('/loadProject/:projectId',
-        middleware.setProjectSelectedOperation,
-        routes.openProject);
+app.get('/initializeProject',
+        middleware.checkForAuth,
+        routes.getProject);
+
+app.get('/project/:projectId', routes.openProject);
 
 // Raw data route, for loading pages to remix
 app.get('/project/:id/data', routes.rawData );

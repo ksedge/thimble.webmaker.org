@@ -53,10 +53,10 @@ module.exports = function(utils, nunjucksEnv, appName) {
     var user = req.session.user;
     var username = encodeURIComponent(user.username);
     request.get({
-      url: publishURL + '/users?name=' + username
-      // headers: {
-      //   "Authorization": "token " + user.token
-      // }
+      url: publishURL + '/users?name=' + username,
+      headers: {
+        "Authorization": "token " + cryptr.decrypt(req.session.token)
+      }
     }, function(err, response, body) {
       if(err) {
         console.error('Error sending request', err);
@@ -75,7 +75,7 @@ module.exports = function(utils, nunjucksEnv, appName) {
       request.get({
         url: publishURL + '/users/' + publishUser.id + '/projects',
         headers: {
-          "Authorization": "token " + req.session.token
+          "Authorization": "token " + cryptr.decrypt(req.session.token)
         }
       }, function(err, response, body) {
         if(err) {
@@ -93,7 +93,8 @@ module.exports = function(utils, nunjucksEnv, appName) {
         var options = {
           csrf: req.csrfToken ? req.csrfToken() : null,
           HTTP_STATIC_URL: '/',
-          projects: JSON.parse(body)
+          projects: JSON.parse(body),
+          PROJECT_URL: 'project'
         };
 
         res.render('projects.html', options);
@@ -102,6 +103,18 @@ module.exports = function(utils, nunjucksEnv, appName) {
   }
 
   function showThimble(req, res) {
+    var makedetails = '{}';
+    var project = req.session.project && req.session.project.meta;
+    if(project && req.session.redirectFromProjectSelection) {
+      makedetails = encodeURIComponent(JSON.stringify({
+        title: project.title,
+        dateCreated: project.date_created,
+        dateUpdated: project.date_updated,
+        tags: project.tags,
+        description: project.description
+      }));
+    }
+
     var options = {
       appname: appName,
       appURL: appURL,
@@ -119,6 +132,7 @@ module.exports = function(utils, nunjucksEnv, appName) {
       together: together,
       userbar: userbarEndpoint,
       webmaker: webmaker,
+      makedetails: makedetails,
       editorHOST: editorHOST,
       OAUTH_CLIENT_ID: oauth.client_id,
       OAUTH_AUTHORIZATION_URL: oauth.authorization_url
@@ -140,17 +154,19 @@ module.exports = function(utils, nunjucksEnv, appName) {
       options.avatar = req.user.avatar;
     }
 
+    req.session.redirectFromProjectSelection = false;
+
     res.render('index.html', options);
   }
 
   function index(req, res) {
-    console.log("Here");
+    // TODO: login stuff
     // Hack until login button is set up
     if(req.query.loggedIn === "yes") {
       req.session.user = { username: "ag_dubs" };
-      req.session.token = "fake_token";
+      req.session.token = cryptr.encrypt("fake_token");
     }
-    if(req.session.user && req.body.pageOperation !== 'project-selected') {
+    if(req.session.user && !req.session.redirectFromProjectSelection) {
       renderUsersProjects(req, res);
       return;
     }
@@ -164,12 +180,82 @@ module.exports = function(utils, nunjucksEnv, appName) {
 
     openProject: function(req, res) {
       if(!req.session.user) {
-        index(req, res);
+        res.redirect(301, '/');
         return;
       }
-      // Get project data from publish.wm.org
 
-      index(req, res);
+      var projectId = req.params.projectId;
+      if(!projectId) {
+        // TODO: handle error
+        console.error('No project ID specified');
+        return;
+      }
+
+      // TODO: UI implementation (progress bar/spinner etc.)
+      //       for blocking code
+      // Get project data from publish.wm.org
+      request.get({
+        url: publishURL + '/projects/' + projectId,
+        headers: {
+          "Authorization": "token " + cryptr.decrypt(req.session.token)
+        }
+      }, function(err, response, body) {
+        if(err) {
+          // TODO: handle error
+          console.error('Failed to get project info');
+          return;
+        }
+
+        if(response.statusCode !== 200) {
+          // TODO: handle error
+          console.error('Error retrieving user\'s projects: ', response);
+          return;
+        }
+
+        req.session.project = {};
+        req.session.project.meta = JSON.parse(body);
+
+        request.get({
+          url: publishURL + '/projects/' + projectId + '/files',
+          headers: {
+            "Authorization": "token " + cryptr.decrypt(req.session.token)
+          }
+        }, function(err, response, body) {
+          if(err) {
+            // TODO: handle error
+            console.error('Failed to get project info');
+            return;
+          }
+
+          if(response.statusCode !== 200) {
+            // TODO: handle error
+            console.error('Error retrieving user\'s projects: ', response);
+            return;
+          }
+
+          var files = JSON.parse(body);
+          req.session.project.files = files.map(function(file) {
+            delete file.buffer;
+            return file;
+          });
+          // Temporarily store the file contents in the session
+          // so that it can be sent to the client once Thimble loads
+          req.session.project.fileCache = files;
+          req.session.redirectFromProjectSelection = true;
+
+          res.redirect(301, '/');
+        });
+      });
+    },
+
+    getProject: function(req, res) {
+      var files = req.session.project.fileCache;
+      delete req.session.project.fileCache;
+      res.type('application/json');
+      res.send({
+        project: req.session.project.meta,
+        files: files
+      });
     },
 
     rawData: function(req, res) {
