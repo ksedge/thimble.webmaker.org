@@ -7,8 +7,10 @@ define(function(require) {
       CurrentPageManager = require("fc/current-page-manager"),
       Publisher = require("fc/publisher"),
       PublishUI = require("fc/ui/publish"),
+      ProjectUI = require("fc/ui/bramble-project"),
       DefaultContentTemplate = require("template!default-content"),
-      Localized = require("localized");
+      Localized = require("localized"),
+      ProjectFiles = require("fc/load-project-files");
 
   Preferences.fetch();
 
@@ -48,6 +50,7 @@ define(function(require) {
       window: window,
       currentPage: pageToLoad
     });
+    ProjectUI.updateMeta(makeDetails);
 
     function doneLoading() {
       editor.panes.codeMirror.on("loaded", function() {
@@ -77,24 +80,27 @@ define(function(require) {
       editor.panes.preview.setViewLink(info.viewURL);
     });
 
-    if (!pageManager.currentPage()) {
-      setTimeout(function() {
-        editor.panes.codeMirror.init(defaultContent);
-        doneLoading();
-      }, 0);
-    } else {
-      publisher.loadCode(pageManager.currentPage(), function(err, data, url) {
-        if (err) {
-          modals.showErrorDialog({
-            text: Localized.get('page-load-err')
-          });
-        } else {
-          editor.panes.codeMirror.init(data);
-          publishUI.setCurrentURL(url);
+    // Bramble: Load the project Files into the fs
+    ProjectFiles.load(makeDetails, function() {
+      if (!pageManager.currentPage()) {
+        setTimeout(function() {
+          editor.panes.codeMirror.init(defaultContent);
           doneLoading();
-        }
-      });
-    }
+        }, 0);
+      } else {
+        publisher.loadCode(pageManager.currentPage(), function(err, data, url) {
+          if (err) {
+            modals.showErrorDialog({
+              text: Localized.get('page-load-err')
+            });
+          } else {
+            editor.panes.codeMirror.init(data);
+            publishUI.setCurrentURL(url);
+            doneLoading();
+          }
+        });
+      }
+    });
 
     return {
       editor: editor,

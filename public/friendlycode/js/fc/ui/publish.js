@@ -49,10 +49,6 @@ define([
 
     modals.add(dialogs);
 
-    // Update the project title in the userbar
-    // see views/userbar.html
-    $('#navbar-project-title > span').text(makeDetails.title || 'New Project');
-
     // Add accordion behaviour to the publication dialog.
     accordions.click(function() {
       accordions.addClass("collapsed");
