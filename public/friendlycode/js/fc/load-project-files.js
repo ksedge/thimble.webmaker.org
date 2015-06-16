@@ -13,9 +13,11 @@ define([], function() {
     var root = project && project.title;
 
     if(!root) {
-      callback();
+      callback(new Error("No project specified"));
       return;
     }
+
+    root = Path.join("/", root);
 
     function updateFs() {
       if(request.readyState !== 4) {
@@ -25,6 +27,7 @@ define([], function() {
       if(request.status !== 200) {
         // TODO: handle error case here
         console.error("Failed to get files for this project");
+        callback(new Error("Failed to get files for this project"));
         return;
       }
 
@@ -35,15 +38,20 @@ define([], function() {
       } catch(e) {
         // TODO: handle error case here
         console.error("Failed to get a response");
+        callback(new Error("Failed to get a response"));
         return;
       }
 
       var length = files.length;
       var completed = 0;
+      var filePathToOpen;
 
       function checkProjectLoaded() {
         if(completed === length) {
-          callback();
+          callback(null, {
+            root: root,
+            open: filePathToOpen
+          });
         }
       }
 
@@ -55,7 +63,7 @@ define([], function() {
             if(err) {
               // TODO: handle error case here
               console.error("Failed to write: ", path);
-              callback();
+              callback(err);
               return;
             }
 
@@ -75,12 +83,17 @@ define([], function() {
       }
 
       if(!length) {
-        callback();
+        // TODO: What should we do here? :P
+        callback(new Error("No files to load"));
         return;
       }
 
       files.forEach(function(file) {
-        file.path = Path.join("/", root, file.path);
+        // TODO: Make this configurable
+        if(!filePathToOpen || Path.extname(filePathToOpen) !== ".html") {
+          filePathToOpen = file.path;
+        }
+        file.path = Path.join(root, file.path);
         writeFile(file.path, new FilerBuffer(file.buffer));
       });
     }

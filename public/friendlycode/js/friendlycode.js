@@ -81,26 +81,28 @@ define(function(require) {
     });
 
     // Bramble: Load the project Files into the fs
-    ProjectFiles.load(makeDetails, function() {
-      if (!pageManager.currentPage()) {
-        setTimeout(function() {
-          editor.panes.codeMirror.init(defaultContent);
+    var initFs = function(callback) {
+      ProjectFiles.load(makeDetails, callback);
+    };
+
+    if (!pageManager.currentPage()) {
+      setTimeout(function() {
+        editor.panes.codeMirror.init(defaultContent, initFs);
+        doneLoading();
+      }, 0);
+    } else {
+      publisher.loadCode(pageManager.currentPage(), function(err, data, url) {
+        if (err) {
+          modals.showErrorDialog({
+            text: Localized.get('page-load-err')
+          });
+        } else {
+          editor.panes.codeMirror.init(data, initFs);
+          publishUI.setCurrentURL(url);
           doneLoading();
-        }, 0);
-      } else {
-        publisher.loadCode(pageManager.currentPage(), function(err, data, url) {
-          if (err) {
-            modals.showErrorDialog({
-              text: Localized.get('page-load-err')
-            });
-          } else {
-            editor.panes.codeMirror.init(data);
-            publishUI.setCurrentURL(url);
-            doneLoading();
-          }
-        });
-      }
-    });
+        }
+      });
+    }
 
     return {
       editor: editor,
