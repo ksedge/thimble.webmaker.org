@@ -82,6 +82,11 @@ define(function(require) {
 
     // Bramble: Load the project Files into the fs
     var initFs = function(callback) {
+      if(!makeDetails || !makeDetails.title) {
+        makeDetails = ProjectFiles.generateDefaultProject();
+        return ProjectFiles.load(makeDetails, defaultContent, callback);
+      }
+
       ProjectFiles.load(makeDetails, callback);
     };
 

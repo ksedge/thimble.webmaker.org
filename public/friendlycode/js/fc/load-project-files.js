@@ -5,12 +5,24 @@ define([], function() {
   var FilerBuffer = Bramble.Filer.Buffer;
   var self = {};
 
-  self.load = function(project, callback) {
+  // Taken from http://stackoverflow.com/questions/6965107/converting-between-strings-and-arraybuffers
+  function convertToBuffer(string) {
+    var buf = new ArrayBuffer(string.length);
+    var bufView = new Uint8Array(buf);
+    for(var i = 0, strLen = string.length; i < strLen; i++) {
+      bufView[i] = string.charCodeAt(i);
+    }
+    return buf;
+  }
+
+  self.load = function(project, defaultTemplate, callback) {
     var fs = Bramble.getFileSystem();
     var shell = new fs.Shell();
     var projectFilesUrl = window.location.protocol + "//" + window.location.host + "/initializeProject";
     var request = new XMLHttpRequest();
     var root = project && project.title;
+    var defaultProject = false;
+    var files;
 
     if(!root) {
       callback(new Error("No project specified"));
@@ -19,27 +31,36 @@ define([], function() {
 
     root = Path.join("/", root);
 
+    if(typeof defaultTemplate !== "function") {
+      defaultProject = true;
+      project.dateCreated = (new Date()).toISOString();
+      project.dateUpdated = project.dateCreated;
+      files = self.generateDefaultFiles(defaultTemplate);
+      updateFs();
+      return;
+    }
+
+    callback = defaultTemplate;
+
     function updateFs() {
-      if(request.readyState !== 4) {
+      if(!defaultProject && request.readyState !== 4) {
         return;
       }
 
-      if(request.status !== 200) {
+      if(!defaultProject && request.status !== 200) {
         // TODO: handle error case here
-        console.error("Failed to get files for this project");
         callback(new Error("Failed to get files for this project"));
         return;
       }
 
-      var files;
-
-      try {
-        files = request.response.files;
-      } catch(e) {
-        // TODO: handle error case here
-        console.error("Failed to get a response");
-        callback(new Error("Failed to get a response"));
-        return;
+      if(!files) {
+        try {
+          files = request.response.files;
+        } catch(e) {
+          // TODO: handle error case here
+          callback(new Error("Failed to get a response"));
+          return;
+        }
       }
 
       var length = files.length;
@@ -102,6 +123,23 @@ define([], function() {
     request.responseType = "json";
     request.open("GET", projectFilesUrl, true);
     request.send();
+  };
+
+  self.generateDefaultProject = function() {
+    return {
+      title: "New Project",
+      tags: [],
+      description: ""
+    };
+  };
+
+  self.generateDefaultFiles = function(defaultTemplate) {
+    return [
+      {
+        path: "index.html",
+        buffer: convertToBuffer(defaultTemplate || "")
+      }
+    ];
   };
 
   return self;
