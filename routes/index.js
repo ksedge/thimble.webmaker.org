@@ -220,6 +220,15 @@ module.exports = function(utils, nunjucksEnv, appName) {
       });
     },
 
+    newProject: function(req, res) {
+      if(!req.session.user) {
+        res.redirect(301, '/');
+        return;
+      }
+
+
+    },
+
     getProject: function(req, res) {
       if(!req.session.user) {
         res.send(403);

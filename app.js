@@ -220,6 +220,8 @@ app.get('/initializeProject',
 
 app.get('/project/:projectId', routes.openProject);
 
+app.get('/newProject', routes.newProject);
+
 // Raw data route, for loading pages to remix
 app.get('/project/:id/data', routes.rawData );
 
