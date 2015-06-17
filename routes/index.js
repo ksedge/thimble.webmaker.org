@@ -226,12 +226,35 @@ module.exports = function(utils, nunjucksEnv, appName) {
         return;
       }
 
+      // new project stuff
+    },
 
+    createOrUpdateProjectFile: function(req, res) {
+      if(!req.session.user) {
+        // TODO: handle error
+        console.error('Unauthorized request');
+        res.send(401);
+        return;
+      }
+
+      if(!req.session.project || !req.session.project.meta) {
+        // TODO: handle error
+        console.error('No project information available for the user');
+        res.send(404);
+        return;
+      }
+
+      if(!req.body || !req.body.path || !req.body.buffer) {
+        // TODO: handle error
+        console.error('Request body missing data: ', req.body);
+        res.send(400);
+        return;
+      }
     },
 
     getProject: function(req, res) {
       if(!req.session.user) {
-        res.send(403);
+        res.send(401);
         return;
       }
 
