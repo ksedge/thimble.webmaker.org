@@ -250,6 +250,9 @@ module.exports = function(utils, nunjucksEnv, appName) {
         res.send(400);
         return;
       }
+
+      console.log('Got request successfully as: ', req.body);
+      res.send(201);
     },
 
     getProject: function(req, res) {

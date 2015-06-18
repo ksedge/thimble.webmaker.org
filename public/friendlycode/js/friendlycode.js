@@ -92,9 +92,9 @@ define(function(require) {
       ProjectFiles.load(makeDetails, callback);
     };
 
-    FileSystemSync.init({
+    FileSystemSync.init(makeDetails && makeDetails.title, {
       createOrUpdate: options.appUrl + "/updateProjectFile"
-    });
+    }, $("meta[name='csrf-token']").attr("content"));
 
     if (!pageManager.currentPage()) {
       setTimeout(function() {

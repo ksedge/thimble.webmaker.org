@@ -128,6 +128,8 @@ define(["backbone-events", "fc/prefs", "fc/bramble-ui-bridge"],
           throw err;
         }
 
+        console.log(Bramble.Filer.Path.normalize(config.root));
+
         // Now that fs is setup, tell Bramble which root dir to mount
         // and which file within that root to open on startup.
         Bramble.mount(config.root, config.open);
