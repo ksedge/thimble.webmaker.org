@@ -222,7 +222,9 @@ app.get('/project/:projectId', routes.openProject);
 
 app.get('/newProject', routes.newProject);
 
-app.post('/updateProjectFile', routes.createOrUpdateProjectFile);
+app.put('/updateProjectFile', routes.createOrUpdateProjectFile);
+
+app.put('/deleteProjectFile', routes.deleteProjectFile);
 
 // Raw data route, for loading pages to remix
 app.get('/project/:id/data', routes.rawData );
