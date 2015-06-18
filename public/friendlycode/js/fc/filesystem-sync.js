@@ -3,15 +3,9 @@ define(["jquery"], function($) {
 
   var FileSystemSync = {};
 
-  function pushFileChange(url, csrfToken, fs, root, path) {
-    console.log("Received fileChange event from bramble for ", path);
-    console.log("Sending to server at ", url);
-    console.log("CSRF token used: ", csrfToken);
-
-    var Path = Bramble.Filer.Path;
+  function pushFileChange(url, csrfToken, fs, path) {
     var options = {
-      contentType: "application/json; charset=UTF-8",
-      dataType: "json",
+      contentType: "application/json",
       headers: {
         "X-Csrf-Token": csrfToken
       },
@@ -26,16 +20,16 @@ define(["jquery"], function($) {
           return;
         }
 
-        if(request.status !== 201) {
+        if(request.status !== 201 && request.status !== 200) {
           // TODO: handle error case here
           console.error("Server did not persist file");
           return;
         }
 
-        console.log("Successfully persisted file");
+        console.log("Successfully persisted ", path);
       });
-      request.fail(function() {
-        console.error("Failed to send request to persist the file to the server");
+      request.fail(function(jqXHR, status, err) {
+        console.error("Failed to send request to persist the file to the server with: ", err);
       });
     }
 
@@ -46,8 +40,8 @@ define(["jquery"], function($) {
       }
 
       options.data = JSON.stringify({
-        path: Path.relative(root, path),
-        buffer: data.toJSON()
+        path: path,
+        buffer: data
       });
 
       send();
@@ -64,18 +58,17 @@ define(["jquery"], function($) {
     }
 
     var fs = Bramble.getFileSystem();
-    var root = Bramble.Filer.Path.join("/", projectName);
 
     function configHandler(handler, url) {
       return function() {
-        Array.prototype.unshift.call(arguments, url, csrfToken, fs, root);
+        Array.prototype.unshift.call(arguments, url, csrfToken, fs);
         handler.apply(null, arguments);
       };
     }
 
     Bramble.on("ready", function(bramble) {
       bramble.on("fileChange", configHandler(pushFileChange, persistanceUrls.createOrUpdate));
-      bramble.on("fileDelete", configHandler(pushFileDelete, persistanceUrls.delete));
+      bramble.on("fileDelete", configHandler(pushFileDelete, persistanceUrls.del));
       bramble.on("fileRename", configHandler(pushFileRename, persistanceUrls.rename));
     });
   };

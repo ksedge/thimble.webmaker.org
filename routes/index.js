@@ -251,8 +251,55 @@ module.exports = function(utils, nunjucksEnv, appName) {
         return;
       }
 
-      console.log('Got request successfully as: ', req.body);
-      res.send(201);
+      var fileReceived = {
+        path: req.body.path,
+        buffer: req.body.buffer,
+        project_id: req.session.project.meta.id
+      };
+      var existingFile = req.session.project.files[fileReceived.path];
+      var httpMethod = 'POST';
+      var resource = '/files';
+
+      if(existingFile) {
+        httpMethod = 'PUT';
+        resource += '/' + existingFile.id;
+      }
+
+      request({
+        method: httpMethod,
+        uri: publishURL + resource,
+        headers: {
+          "Authorization": "token " + cryptr.decrypt(req.session.token)
+        },
+        body: fileReceived,
+        json: true
+      }, function(err, response, body) {
+        if(err) {
+          // TODO: handle error
+          console.error('Failed to send ' + httpMethod + ' request');
+          res.send(500);
+          return;
+        }
+
+        if((httpMethod === 'POST' && response.statusCode !== 201) ||
+           (httpMethod === 'PUT' && response.statusCode !== 200)) {
+          console.error('Error updating project file: ', response);
+          res.send(response.statusCode);
+          return;
+        }
+
+        if(httpMethod === 'POST') {
+          req.session.project.files[fileReceived.path] = {
+            id: body.id,
+            path: fileReceived.path,
+            project_id: fileReceived.project_id
+          };
+          res.send(201);
+          return;
+        }
+
+        res.send(200);
+      });
     },
 
     getProject: function(req, res) {
@@ -284,10 +331,11 @@ module.exports = function(utils, nunjucksEnv, appName) {
         }
 
         var files = JSON.parse(body);
-        req.session.project.files = files.map(function(file) {
+        req.session.project.files = {};
+        files.forEach(function(file) {
           var fileMeta = JSON.parse(JSON.stringify(file));
           delete fileMeta.buffer;
-          return fileMeta;
+          req.session.project.files[fileMeta.path] = fileMeta;
         });
 
         res.type('application/json');
