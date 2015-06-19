@@ -1,7 +1,6 @@
 body {
 	font-family: 'Open Sans', sans-serif;
 	font-size: 1em;
-	font-weight: 600;
 }
 
 #container {
@@ -21,6 +20,9 @@ table#project-list {
 	padding: 0;
 	border-collapse: collapse;
 	cursor: pointer;
+	-webkit-user-select: none; /* Chrome/Safari */
+	-moz-user-select: none; /* Firefox */
+	-ms-user-select: none; /* IE10+ */
 }
 
 tr.project:hover {
@@ -83,7 +85,7 @@ td.project-remix {
 	white-space: nowrap;
 }
 
-#project-create-new {
+#project-0 {
 	margin-top: 10px;
 	margin-left: 10px;
 	padding: 5px 10px 5px 10px;

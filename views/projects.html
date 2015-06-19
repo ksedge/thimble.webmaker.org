@@ -1,13 +1,20 @@
+{% extends "layout.html" %}
+{% block body %}
   <div id="container">
      <h2>Your Projects</h2>
     <table id="project-list">
 
-      <tr class="project">
+    {% for project in projects %}
+      <tr class="project bramble-user-project"
+          id="{{ [ 'project', project.id ] | join('-') }}"
+      {% for key, value in project %}
+        {{ [ "data", "project", key ] | join("-") }}="{{ value }}"
+      {% endfor %}
+      >
         <td class="side-fill"></td>
         <td class="project-title">
-          Mobile Design Kit
+          {{ project.title }}
           <span class="project-information">
-          Edited 28 hours ago
           </span>
         </td>
         <td class="project-delete">
@@ -19,7 +26,10 @@
         </td>
         <td class="side-fill"></td>
       </tr>
+    {% endfor %}
 
     </table>
-    <a id="project-create-new" href="#">Create New</a>
+    <div id="project-0">Create New</div>
+    <script src="/scripts/open-project.js"></script>
   </div>
+{% endblock %}
