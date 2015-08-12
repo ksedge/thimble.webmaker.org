@@ -12,7 +12,7 @@ define(function(require) {
   var _fs;
 
   // _dateCreated ?
-  // _dateUpdated? 
+  // _dateUpdated?
   // _description?
 
   function getUser() {
@@ -41,9 +41,11 @@ define(function(require) {
 
   // From /7/projects/5/index.html to /index.html
   function stripRoot(path) {
-    return path.replace(this.getRoot(), "");
+    var fn = this.getRoot || getRoot;
+
+    return path.replace(fn(), "");
   }
-  
+
   // From /index.html to /7/projects/5/index.html to
   function addRoot(path) {
     Path.join(getRoot(), path);
